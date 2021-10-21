@@ -22,11 +22,9 @@ namespace Semantic.Editor.Core.Controls
 
             MyItems = new ObservableCollection<ListBoxItem>
             {
-                new ListBoxItem {Content = "1"},
-                new ListBoxItem {Content = "2"},
-                new ListBoxItem {Content = "3"},
-                // new ListBoxItem {Content = new SingleLineBlock { PhysicalText = "Im second" }},
-                // new ListBoxItem {Content = new SingleLineBlock { PhysicalText = "Im third" }},
+                new ListBoxItem {Content = new SingleLineBlock { CustomText = "Im first" }},
+                new ListBoxItem {Content = new SingleLineBlock { CustomText = "Im second" }},
+                new ListBoxItem {Content = new SingleLineBlock { CustomText = "Im third" }},
             };
 
             foreach (var item in MyItems)
@@ -46,7 +44,7 @@ namespace Semantic.Editor.Core.Controls
         public ObservableCollection<ListBoxItem> MyItems { get; set; }
 
         public ObservableCollection<Block> ItemList { get; set; }
-        public override string? PhysicalText { get; set ; }
+        public override string? PhysicalText { get ; set ; }
 
         private void InitializeComponent()
         {

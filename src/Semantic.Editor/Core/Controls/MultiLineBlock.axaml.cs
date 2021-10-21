@@ -15,20 +15,38 @@ namespace Semantic.Editor.Core.Controls
 
             ItemList = new ObservableCollection<Block>
             {
-                new SingleLineBlock { CustomText = "Im first", Parent = this },
-                new SingleLineBlock { CustomText = "Im second", Parent = this },
-                new SingleLineBlock { CustomText = "Im third", Parent = this },
+                new SingleLineBlock { PhysicalText = "Im first (main)" },
+                new SingleLineBlock { PhysicalText = "Im second (main)" },
+                new SingleLineBlock { PhysicalText = "Im third (main)" },
             };
+
+            MyItems = new ObservableCollection<ListBoxItem>
+            {
+                new ListBoxItem {Content = "1"},
+                new ListBoxItem {Content = "2"},
+                new ListBoxItem {Content = "3"},
+                // new ListBoxItem {Content = new SingleLineBlock { PhysicalText = "Im second" }},
+                // new ListBoxItem {Content = new SingleLineBlock { PhysicalText = "Im third" }},
+            };
+
+            foreach (var item in MyItems)
+            {
+                item.PointerPressed += OnPressed;
+                item.PointerReleased += OnReleased;
+                item.PointerMoved += OnMoved;
+            }
 
             DataContext = this;
 
-            PointerPressed += OnPressed;
-            PointerReleased += OnReleased;
-            PointerMoved += OnMoved;
+            // PointerPressed += OnPressed;
+            // PointerReleased += OnReleased;
+            // PointerMoved += OnMoved;
         }
 
-        public IList<Block> ItemList { get; set; }
-        public int SelectedIndex { get; set; }
+        public ObservableCollection<ListBoxItem> MyItems { get; set; }
+
+        public ObservableCollection<Block> ItemList { get; set; }
+        public override string? PhysicalText { get; set ; }
 
         private void InitializeComponent()
         {

@@ -6,6 +6,7 @@
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="450"
              x:Class="Semantic.Editor.Core.Controls.MultiLineBlock">
 
-  <ListBox Name="MainListBox" 
-           Items="{Binding ItemList}" />
+  <ItemsControl Name="MainListBox"
+           Items="{Binding MyItems}">
+  </ItemsControl>
 </UserControl>

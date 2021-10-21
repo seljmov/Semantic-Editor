@@ -4,6 +4,8 @@ using Avalonia.Input;
 using Avalonia.Media;
 using System.Collections;
 using Semantic.Editor.Core.Controls;
+using Avalonia.Controls.Primitives;
+using System;
 
 namespace Semantic.Editor.Core
 {
@@ -13,59 +15,66 @@ namespace Semantic.Editor.Core
         private Point _start;
         private int _draggedIndex;
         private int _targetIndex;
-        private IHaveItems? _haveItems;
+        private ItemsControl? _itemsControl;
         private IControl? _draggedContainer;
 
-        public new Block? Parent { get; set; }
+        public abstract string? PhysicalText { get; set; }
 
         public void OnPressed(object? sender, PointerPressedEventArgs e) 
         {
-            if (Parent is not IHaveItems haveItems)
+            var item = ((IControl)sender!);
+
+            if (item.Parent is not ItemsControl itemsControl)
             {
                 return;
             }
 
+            Console.WriteLine("OnPressed");
+
             _enableDrag = true;
-            _start = e.GetPosition(Parent);
+            _start = e.GetPosition(item.Parent);
             _draggedIndex = -1;
             _targetIndex = -1;
-            _haveItems = haveItems;
-            _draggedContainer = ((IControl?)sender);
+            _itemsControl = itemsControl;
+            _draggedContainer = item;
 
-            AddTransform(_haveItems);
+            AddTransform(_itemsControl);
         }
         
         public void OnReleased(object? sender, PointerReleasedEventArgs e) 
         {
             if (_enableDrag)
             {
-                RemoveTransform(_haveItems);
+                Console.WriteLine("OnReleased");
+
+                RemoveTransform(_itemsControl);
 
                 if (_draggedIndex >= 0 && _targetIndex >= 0 && _draggedIndex != _targetIndex)
                 {
-                    MoveDraggedItem(_haveItems, _draggedIndex, _targetIndex);
+                    Console.WriteLine($"MoveItem {_draggedIndex} -> {_targetIndex}");
+                    MoveDraggedItem(_itemsControl, _draggedIndex, _targetIndex);
                 }
 
                 _draggedIndex = -1;
                 _targetIndex = -1;
                 _enableDrag = false;
-                _haveItems = null;
+                _itemsControl = null;
                 _draggedContainer = null;
             }
         }
         
-        private void AddTransform(IHaveItems? haveItems)
+        private void AddTransform(ItemsControl? itemsControl)
         {
-            if (haveItems?.ItemList is null)
+            if (itemsControl?.Items is null)
             {
                 return;
             }
 
             var i = 0;
 
-            foreach (var _ in haveItems.ItemList)
+            foreach (var _ in itemsControl.Items)
             {
-                var container = haveItems.ItemList[i];
+                var container = itemsControl.ItemContainerGenerator.ContainerFromIndex(i);
                 if (container is not null)
                 {
                     container.RenderTransform = new TranslateTransform();
@@ -75,18 +84,18 @@ namespace Semantic.Editor.Core
             }
         }
 
-        private void RemoveTransform(IHaveItems? haveItems)
+        private void RemoveTransform(ItemsControl? itemsControl)
         {
-            if (haveItems?.ItemList is null)
+            if (itemsControl?.Items is null)
             {
                 return;
             }
 
             var i = 0;
 
-            foreach (var _ in haveItems.ItemList)
+            foreach (var _ in itemsControl.Items)
             {
-                var container = haveItems.ItemList[i];
+                var container = itemsControl.ItemContainerGenerator.ContainerFromIndex(i);
                 if (container is not null)
                 {
                     container.RenderTransform = null;
@@ -96,45 +105,52 @@ namespace Semantic.Editor.Core
             }
         }
 
-        private void MoveDraggedItem(IHaveItems? haveItems, int draggedIndex, int targetIndex)
+        private void MoveDraggedItem(ItemsControl? itemsControl, int draggedIndex, int targetIndex)
         {
-            if (haveItems?.ItemList is not IList items)
+            if (itemsControl?.Items is not IList items)
             {
                 return;
             }
+
+            Console.WriteLine("MoveDraggedItem");
 
             var draggedItem = items[draggedIndex];
             items.RemoveAt(draggedIndex);
             items.Insert(targetIndex, draggedItem);
 
-            _haveItems!.SelectedIndex = targetIndex;
+            if (itemsControl is SelectingItemsControl selectingItemsControl)
+            {
+                selectingItemsControl.SelectedIndex = targetIndex;
+            }
         }
 
         public void OnMoved(object? sender, PointerEventArgs e) 
         {
-            if (_haveItems?.ItemList is null || _draggedContainer?.RenderTransform is null || !_enableDrag)
+            if (_itemsControl?.Items is null || _draggedContainer?.RenderTransform is null || !_enableDrag)
             {
                 return;
             }
 
-            var position = e.GetPosition(Parent);
+            Console.WriteLine("OnMoved");
+
+            var position = e.GetPosition(_itemsControl);
             var delta = position.Y - _start.Y;
 
             ((TranslateTransform)_draggedContainer.RenderTransform).Y = delta;
 
-            _draggedIndex = _haveItems.ItemList.IndexOf((Block)_draggedContainer);
+            _draggedIndex = _itemsControl.ItemContainerGenerator.IndexFromContainer(_draggedContainer);
             _targetIndex = -1;
 
             var draggedBounds = _draggedContainer.Bounds;
             var draggedStart = draggedBounds.Y;
-            var draggedDeltaStart = draggedStart + delta;
+            var draggedDeltaStart = draggedBounds.Y + delta;
             var draggedDeltaEnd = draggedBounds.Y + delta + draggedBounds.Height;
 
             var i = 0;
 
-            foreach (var _ in _haveItems.ItemList)
+            foreach (var _ in _itemsControl.Items)
             {
-                var targetContainer = _haveItems.ItemList[i];
+                var targetContainer = _itemsControl.ItemContainerGenerator.ContainerFromIndex(i);
                 if (targetContainer?.RenderTransform is null || ReferenceEquals(targetContainer, _draggedContainer))
                 {
                     i++;
@@ -144,23 +160,27 @@ namespace Semantic.Editor.Core
                 var targetBounds = targetContainer.Bounds;
                 var targetStart = targetBounds.Y;
                 var targetMid = targetBounds.Y + targetBounds.Height / 2;
-                var targetIndex = _haveItems.ItemList.IndexOf(targetContainer);
+                var targetIndex = _itemsControl.ItemContainerGenerator.IndexFromContainer(targetContainer);
 
                 if (targetStart > draggedStart && draggedDeltaEnd >= targetMid)
                 {
                     ((TranslateTransform)targetContainer.RenderTransform).Y = -draggedBounds.Height;
 
-                    _targetIndex = _targetIndex == -1
-                        ? targetIndex
-                        : targetIndex < _targetIndex ? targetIndex : _targetIndex;
+                    _targetIndex = _targetIndex == -1 
+                        ? targetIndex 
+                        : targetIndex > _targetIndex ? targetIndex : _targetIndex;
+
+                    Console.WriteLine($"Moved Right {_draggedIndex} -> {_targetIndex}");
                 }
                 else if (targetStart < draggedStart && draggedDeltaStart <= targetMid)
                 {
                     ((TranslateTransform)targetContainer.RenderTransform).Y = draggedBounds.Height;
 
-                    _targetIndex = _targetIndex == -1
-                        ? targetIndex
-                        : targetIndex > _targetIndex ? targetIndex : _targetIndex;
+                    _targetIndex = _targetIndex == -1 
+                        ? targetIndex 
+                        : targetIndex < _targetIndex ? targetIndex : _targetIndex;
+                    
+                    Console.WriteLine($"Moved Left {_draggedIndex} -> {_targetIndex}");
                 }
                 else
                 {
@@ -169,6 +189,8 @@ namespace Semantic.Editor.Core
 
                 i++;
             }
+
+            Console.WriteLine($"Moved {_draggedIndex} -> {_targetIndex}");
         }
     }
 }

@@ -14,10 +14,12 @@ namespace Semantic.Editor.Core.Controls
         {
             InitializeComponent();
 
-            PointerPressed += OnPressed;
-            PointerReleased += OnReleased;
-            PointerMoved += OnMoved;
+            // PointerPressed += OnPressed;
+            // PointerReleased += OnReleased;
+            // PointerMoved += OnMoved;
         }
+
+        public override string? PhysicalText { get; set; }
 
         public string? CustomText
         {
@@ -25,7 +27,6 @@ namespace Semantic.Editor.Core.Controls
             set
             {
                 _customText = value;
-                // Content = new ListBoxItem { Content = _customText };
                 Content = _customText;
             }
         }

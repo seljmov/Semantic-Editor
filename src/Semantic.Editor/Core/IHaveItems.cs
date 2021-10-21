@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.ObjectModel;
 
 namespace Semantic.Editor.Core
 {
     public interface IHaveItems
     {
-        public IList<Block> ItemList { get; set; }
+        public ObservableCollection<Block> ItemList { get; set; }
         
-        public int SelectedIndex { get; set; }
+        // public int SelectedIndex { get; set; }
     }
 }
